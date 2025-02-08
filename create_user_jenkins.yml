@@ -1,0 +1,27 @@
+- name: Criar usuário Jenkins com chave SSH e reiniciar SSHD
+  hosts: all
+  become: yes
+  tasks:
+    - name: Criar o usuário Jenkins
+      user:
+        name: jenkins
+        comment: "Usuário para Jenkins"
+        shell: /bin/bash
+        state: present
+
+    - name: Adicionar a chave SSH para o usuário Jenkins
+      authorized_key:
+        user: jenkins
+        state: present
+        key: "{{ lookup('file', '/data/keys/public_key.pub') }}"
+
+    - name: Permitir que o Jenkins use sudo sem senha
+      lineinfile:
+        path: /etc/sudoers
+        line: 'jenkins ALL=(ALL) NOPASSWD:ALL'
+        validate: '/usr/sbin/visudo -cf %s'
+
+    - name: Reiniciar o serviço SSHD
+      service:
+        name: sshd
+        state: restarted
